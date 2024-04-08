@@ -14,7 +14,6 @@ type FormValues = {
 
 const Form = () => {
   const [colorResponse, setColorResponse] = useState<string>("");
-  const [content, setContent] = useState<string>("");
 
   const {
     handleSubmit,
@@ -23,16 +22,15 @@ const Form = () => {
     formState: { errors, isSubmitting, isDirty, isValid },
   } = useForm<FormValues>({});
 
-  // api call to mood to color
   const openai = new OpenAI({
     apiKey: process.env.NEXT_PUBLIC_COLOR_KEY,
     dangerouslyAllowBrowser: true,
   });
 
+  // api call to mood to color
   const getColorApi = async (content: string) => {
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
+    if (content) {
+      const messages: any = [
         {
           role: "system",
           content:
@@ -42,17 +40,35 @@ const Form = () => {
           role: "user",
           content: content,
         },
-      ],
-      temperature: 0,
-      max_tokens: 1024,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
-    });
+      ];
 
-    //parse the response:
+      const response = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: messages,
+        temperature: 0,
+        max_tokens: 1024,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+      });
+      return response
+    }
+  };
+
+  //on button press:
+  const onSubmit = async (data: FormValues) => {
+    if (!isSubmitting) {
+      if (data.inputValue) {
+        const res = await getColorApi(data.inputValue);
+        if(res){
+            determineColor(res);
+        };
+      }
+    }
+  };
+
+  const determineColor = (response: any) => {
     let splitResponse = response.choices[0].message.content?.split(": ");
-    // console.log(response.choices[0].message.content)
 
     if (splitResponse) {
       //if format is rgb:
@@ -69,7 +85,7 @@ const Form = () => {
       } else {
         // if format is a hex code:
         const substring = splitResponse[2];
-        const hexCode = substring.substring(0, 7);
+        const hexCode = substring?.substring(0, 7);
         setColorResponse(hexCode);
       }
       // add third optioin to catch if format returns a color (e.g. "orange")
@@ -77,19 +93,6 @@ const Form = () => {
     //clear the form fields and reset isDirty etc
     reset();
   };
-
-  //on button press:
-  const onSubmit = async (data: FormValues) => {
-    setContent(data.inputValue);
-  };
-
-  useEffect(() => {
-    // when React registers the state change, call the api function, passing that state value as a param to keep in sync.
-    if (content) {
-        let _content = content;
-        getColorApi(_content);
-    }
-  }, [content]);
 
   return (
     <Fragment>
