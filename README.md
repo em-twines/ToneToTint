@@ -22,3 +22,11 @@ To run:
 - supply a valid api key to a .env file located at the root of the project
 - npm run dev 
 
+
+To run jest testing: 
+- npm test
+
+
+Future itereations will incluced: 
+- a more extensive testing suite
+- further refactoring of the api call 
