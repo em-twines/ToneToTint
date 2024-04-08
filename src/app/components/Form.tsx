@@ -2,11 +2,12 @@
 
 import React, { useState, Fragment, useEffect } from "react";
 import { useForm } from "react-hook-form";
+// import below necessary for jest testing
+// import "openai/shims/node";
 import OpenAI from "openai";
 import Button from "@mui/material/Button";
 import Input from "@mui/material/Input";
 
-//TODO: add unit and integration tests
 
 type FormValues = {
   inputValue: string;
@@ -138,6 +139,7 @@ const Form = () => {
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-12"
                 id="inputValue"
                 name="inputValue"
+                data-testid="inputValue"
                 placeholder="Raindrops on roses."
                 autoComplete="off"
                 aria-required="true"
@@ -152,7 +154,9 @@ const Form = () => {
                 type="submit"
                 disabled={!isDirty || !isValid || isSubmitting}
                 role="button"
-                id="submitPhrase"
+                id="submitPhraseButton"
+                data-testid="submitPhraseButton"
+
               >
                 Submit
               </Button>
@@ -170,3 +174,6 @@ const Form = () => {
 };
 
 export default Form;
+
+
+
