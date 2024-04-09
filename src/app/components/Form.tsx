@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, Fragment, useEffect } from "react";
+import React, { useState, Fragment, useRef } from "react";
 import { useForm } from "react-hook-form";
-// import below necessary for jest testing
+// TODO: import below is necessary for jest testing, but breaks npm run dev
 // import "openai/shims/node";
 import OpenAI from "openai";
 import Button from "@mui/material/Button";
 import Input from "@mui/material/Input";
-
+import { ChatCompletion } from "openai/resources/index.mjs";
+import { toast } from 'react-hot-toast';
 
 type FormValues = {
   inputValue: string;
@@ -15,6 +16,30 @@ type FormValues = {
 
 const Form = () => {
   const [colorResponse, setColorResponse] = useState<string>("");
+  const response = {
+    id: "chatcmpl-abc123",
+    object: "chat.completion",
+    created: 1677858242,
+    model: "gpt-3.5-turbo-0613",
+    usage: {
+      prompt_tokens: 13,
+      completion_tokens: 7,
+      total_tokens: 20,
+    },
+    choices: [
+      {
+        message: {
+          role: "assistant",
+          content:
+            '{\n    "css_code": "/* Please provide a mood description to generate the CSS code for a matching color */"\n}',
+        },
+        logprobs: null,
+        finish_reason: "stop",
+        index: 0,
+      },
+    ],
+  };
+  const messageRef = useRef(response.choices[0].message.content.toString());
 
   const {
     handleSubmit,
@@ -28,9 +53,15 @@ const Form = () => {
     dangerouslyAllowBrowser: true,
   });
 
+
   // api call to mood to color
   const getColorApi = async (content: string) => {
-    if (content) {
+    // we will try the call up to and including 5 times since it often fails to return a color,
+    // but after 5, we will show an error message and break. 
+    
+    let response: ChatCompletion | undefined; 
+    let counter = 0; 
+    do{    
       const messages: any = [
         {
           role: "system",
@@ -43,7 +74,7 @@ const Form = () => {
         },
       ];
 
-      const response = await openai.chat.completions.create({
+      response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: messages,
         temperature: 0,
@@ -52,20 +83,30 @@ const Form = () => {
         frequency_penalty: 0,
         presence_penalty: 0,
       });
-      return response
-    }
-  };
+
+      if (response.choices[0].message.content) {
+        messageRef.current = response.choices[0].message.content.toString();
+      }    
+      counter ++; 
+    } while (messageRef.current.includes("Please provide") && counter <= 5);
+
+    if (counter >=5&& messageRef.current.includes("Please provide")) {
+      toast.error('Failed to return a color from the api endpoint! Darned AI!');
+      counter = 0; 
+    };
+    return response;
+  }
+
 
   //on button press:
   const onSubmit = async (data: FormValues) => {
     if (!isSubmitting) {
       if (data.inputValue) {
-        const res = await getColorApi(data.inputValue);
-        if(res){
+          await getColorApi(data.inputValue).then((res) => {
             determineColor(res);
-        };
+          });
+        }
       }
-    }
   };
 
   const determineColor = (response: any) => {
@@ -73,7 +114,7 @@ const Form = () => {
 
     if (splitResponse) {
       //if format is rgb:
-      if (splitResponse[1].includes("rgb")) {
+      if (splitResponse[1]?.includes("rgb")) {
         const substring = response.choices[0].message.content?.split('"');
         if (substring) {
           const rgbPlus = substring[3];
@@ -89,7 +130,8 @@ const Form = () => {
         const hexCode = substring?.substring(0, 7);
         setColorResponse(hexCode);
       }
-      // add third optioin to catch if format returns a color (e.g. "orange")
+      // add third option to catch if format returns a color (e.g. "orange") 
+      // or returns a non-standard reply (like "your CSS code here")
     }
     //clear the form fields and reset isDirty etc
     reset();
@@ -156,7 +198,6 @@ const Form = () => {
                 role="button"
                 id="submitPhraseButton"
                 data-testid="submitPhraseButton"
-
               >
                 Submit
               </Button>
@@ -174,6 +215,3 @@ const Form = () => {
 };
 
 export default Form;
-
-
-

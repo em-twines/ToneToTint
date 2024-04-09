@@ -1,7 +1,7 @@
 # ToneToTint
 An ai-powered color generator utilizing OpenAI's Mood to Color api.
 
-To view a deployed build: https://main--tonetotint.netlify.app/
+To view a deployed build: https://tonetotint.netlify.app/
 
 Description: 
 This application starts with a default text and color, then uses react hook form to capture an input and submit that input as content in an api call to the ai endpoint. 
@@ -20,10 +20,12 @@ created using "npx create-next-app@latest --typescript"
 
 To run: 
 - supply a valid api key to a .env file located at the root of the project
+- be sure line 6 of form.tsx is commented out
 - npm run dev 
 
 
 To run jest testing: 
+- comment in line 6 of form.tsx
 - npm test
 
 
